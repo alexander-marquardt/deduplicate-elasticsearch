@@ -1,4 +1,8 @@
 #!/usr/local/bin/python3
+
+# A description and analysis of this code can be found at 
+# https://alexmarquardt.com/2018/07/23/deduplicating-documents-in-elasticsearch/
+
 import hashlib
 from elasticsearch import Elasticsearch
 es = Elasticsearch(["localhost:9200"])
