@@ -4,8 +4,13 @@
 # https://alexmarquardt.com/2018/07/23/deduplicating-documents-in-elasticsearch/
 
 import hashlib
-from elasticsearch import Elasticsearch
-es = Elasticsearch(["localhost:9200"])
+from elasticsearch import Elasticsearch, helpers
+
+ES_HOST = 'localhost:9200'
+ES_USER = 'elastic'
+ES_PASSWORD = 'elastic'
+
+es = Elasticsearch([ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
 dict_of_duplicate_docs = {}
 
 # The following line defines the fields that will be
@@ -14,48 +19,30 @@ keys_to_include_in_hash = ["CAC", "FTSE", "SMI"]
 
 
 # Process documents returned by the current search/scroll
-def populate_dict_of_duplicate_docs(hits):
-    for item in hits:
-        combined_key = ""
-        for mykey in keys_to_include_in_hash:
-            combined_key += str(item['_source'][mykey])
+def populate_dict_of_duplicate_docs(hit):
 
-        _id = item["_id"]
+    combined_key = ""
+    for mykey in keys_to_include_in_hash:
+        combined_key += str(hit['_source'][mykey])
 
-        hashval = hashlib.md5(combined_key.encode('utf-8')).digest()
+    _id = hit["_id"]
 
-        # If the hashval is new, then we will create a new key
-        # in the dict_of_duplicate_docs, which will be
-        # assigned a value of an empty array.
-        # We then immediately push the _id onto the array.
-        # If hashval already exists, then
-        # we will just push the new _id onto the existing array
-        dict_of_duplicate_docs.setdefault(hashval, []).append(_id)
+    hashval = hashlib.md5(combined_key.encode('utf-8')).digest()
+
+    # If the hashval is new, then we will create a new key
+    # in the dict_of_duplicate_docs, which will be
+    # assigned a value of an empty array.
+    # We then immediately push the _id onto the array.
+    # If hashval already exists, then
+    # we will just push the new _id onto the existing array
+    dict_of_duplicate_docs.setdefault(hashval, []).append(_id)
 
 
 # Loop over all documents in the index, and populate the
 # dict_of_duplicate_docs data structure.
 def scroll_over_all_docs():
-    data = es.search(index="stocks", scroll='1m',  body={"query": {"match_all": {}}})
-
-    # Get the scroll ID
-    sid = data['_scroll_id']
-    scroll_size = len(data['hits']['hits'])
-
-    # Before scroll, process current batch of hits
-    populate_dict_of_duplicate_docs(data['hits']['hits'])
-
-    while scroll_size > 0:
-        data = es.scroll(scroll_id=sid, scroll='2m')
-
-        # Process current batch of hits
-        populate_dict_of_duplicate_docs(data['hits']['hits'])
-
-        # Update the scroll ID
-        sid = data['_scroll_id']
-
-        # Get the number of results that returned in the last scroll
-        scroll_size = len(data['hits']['hits'])
+    for hit in helpers.scan(es, index='stocks'):
+        populate_dict_of_duplicate_docs(hit)
 
 
 def loop_over_hashes_and_remove_duplicates():
