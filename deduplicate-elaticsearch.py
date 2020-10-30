@@ -5,12 +5,15 @@
 
 import hashlib
 from elasticsearch import Elasticsearch, helpers
+import secrets
 
-ES_HOST = 'localhost:9200'
-ES_USER = 'elastic'
-ES_PASSWORD = 'elastic'
+ES_HOST = secrets.ES_HOST
+ES_USER = secrets.ES_USER
+ES_PASSWORD = secrets.ES_PASSWORD
+ES_PORT = secrets.ES_PORT
+ES_INDEX = secrets.ES_INDEX
 
-es = Elasticsearch([ES_HOST], http_auth=(ES_USER, ES_PASSWORD))
+es = Elasticsearch([{'host': ES_HOST, 'port': ES_PORT, 'use_ssl': True}], http_auth=(ES_USER, ES_PASSWORD))
 dict_of_duplicate_docs = {}
 
 # The following line defines the fields that will be
@@ -41,7 +44,7 @@ def populate_dict_of_duplicate_docs(hit):
 # Loop over all documents in the index, and populate the
 # dict_of_duplicate_docs data structure.
 def scroll_over_all_docs():
-    for hit in helpers.scan(es, index='stocks'):
+    for hit in helpers.scan(es, index=ES_INDEX):
         populate_dict_of_duplicate_docs(hit)
 
 
@@ -52,7 +55,7 @@ def loop_over_hashes_and_remove_duplicates():
       if len(array_of_ids) > 1:
         print("********** Duplicate docs hash=%s **********" % hashval)
         # Get the documents that have mapped to the current hasval
-        matching_docs = es.mget(index="stocks", doc_type="doc", body={"ids": array_of_ids})
+        matching_docs = es.mget(index=ES_INDEX, doc_type="doc", body={"ids": array_of_ids})
         for doc in matching_docs['docs']:
             # In order to remove the possibility of hash collisions,
             # write code here to check all fields in the docs to
