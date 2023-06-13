@@ -3,3 +3,4 @@ A python script to detect duplicate documents in Elasticsearch. Once duplicates 
 
 For a full description on how this script works including an analysis of the memory requirements, see: https://alexmarquardt.com/2018/07/23/deduplicating-documents-in-elasticsearch/
 
+Based on the original script, add the implementation logic of deleting duplicate documents, and leave a document
