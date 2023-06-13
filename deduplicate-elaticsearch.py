@@ -3,7 +3,7 @@
 # A description and analysis of this code can be found at 
 # https://alexmarquardt.com/2018/07/23/deduplicating-documents-in-elasticsearch/
 
-# 删除es里重复的文档
+# Delete duplicate documents in es
 
 from loguru import logger
 import hashlib
@@ -18,16 +18,16 @@ dict_of_duplicate_docs = {}
 
 # The following line defines the fields that will be
 # used to determine if a document is a duplicate
-# 筛选的重复字段
+# Filtered Repeated Fields
 keys_to_include_in_hash = ["CAC", "FTSE", "SMI"]
 
-# 查找重复字段的索引，可以加通配符*
+# Find the index of repeated fields, you can add wildcard *
 scan_index = "stocks*"
 
-# 删除文档的索引，不可以加通配符
+# Delete the index of the document, wildcards cannot be added
 mget_index = "stock"
 
-# 根据具体es的内容得到
+# Get according to the content of the specific es
 doc_type = "_doc"
 
 
@@ -68,7 +68,7 @@ def loop_over_hashes_and_remove_duplicates():
             matching_docs = es.mget(index=mget_index, doc_type=doc_type, body={"ids": array_of_ids})
             count = len(matching_docs['docs'])
             for doc in matching_docs['docs']:
-                # 删除一个重复文档后弹出
+                # popup after deleting a duplicate document
                 logger.info("doc=%s\n" % doc)
                 es.delete(index=doc['_index'], id=doc['_id'])
                 count -= 1
@@ -77,9 +77,9 @@ def loop_over_hashes_and_remove_duplicates():
 
 
 def main():
-    logger.info("查找全部文档...")
+    logger.info("scroll over all docs ...")
     scroll_over_all_docs()
-    logger.info("删除重复文档...")
+    logger.info("remove duplicates ...")
     loop_over_hashes_and_remove_duplicates()
 
 
